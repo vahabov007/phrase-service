@@ -92,6 +92,14 @@ public class PhraseController {
                 "/api/v1/phrases/search"));
     }
 
+    @Operation(summary = "Delete all phrases",
+               description = "Permanently removes all phrases and their associated definitions and examples from the database.")
+    @DeleteMapping("/all")
+    public ResponseEntity<ApiResponse<Void>> deleteAllPhrases() {
+        phraseService.deleteAllPhrases();
+        return ResponseEntity.ok(ApiResponse.success("All phrases deleted successfully."));
+    }
+
 
 
 

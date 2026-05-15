@@ -47,6 +47,11 @@ public class PhraseService {
     }
 
     @Transactional
+    public void deleteAllPhrases() {
+        phraseRepository.deleteAll();
+    }
+
+    @Transactional
     public void saveStrict(Phrase phrase) {
         if (phrase == null || phrase.getPhrase() == null) return;
         phraseNormalizationService.normalizeContent(phrase);

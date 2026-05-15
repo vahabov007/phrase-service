@@ -5,6 +5,7 @@ import com.vahabvahabov.phrase_service.dto.PhraseUploadDTO;
 import com.vahabvahabov.phrase_service.model.Phrase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +16,10 @@ public class PhraseConsumerService {
     private final PhraseService phraseService;
 
     @KafkaListener(topics = "phrase-sync-topic", groupId = "phrase-group")
-    public void consumerSyncRequest(List<String> lines) {
-        log.info("Kafka: Received {} lines to sync phrases.", lines.size());
-
+    public void consumerSyncRequest(ConsumerRecord<String, List<String>> record) {
+        List<String> lines = record.value();
+        log.info("Kafka: Received {} lines from partition {}", lines.size(), record.partition());
         try {
-            // 1. Reuse your existing Parsing Logic
             ParseResultDTO parseResult = phraseService.parseLines(lines);
             List<PhraseUploadDTO> dtos = parseResult.getLines();
 
@@ -28,19 +28,16 @@ public class PhraseConsumerService {
                 return;
             }
 
-            // 2. Convert DTOs to Entities (Reusing your existing extractWordDto)
             List<Phrase> phrases = dtos.stream()
                     .map(phraseService::extractWordDto)
                     .toList();
 
-            // 3. Save them strictly
             phraseService.saveAllStrict(phrases);
 
             log.info("Kafka: Successfully synced {} phrases in the background.", phrases.size());
 
         } catch (Exception e) {
             log.error("Kafka: Error during background phrase sync: {}", e.getMessage());
-            // In a real system, you might send this to a 'Dead Letter Topic' for later review
         }
     }
 }
